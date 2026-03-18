@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contexto</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: #18181b; }
+
+    .root {
+      min-height: 100vh;
+      background: #18181b;
+      font-family: 'DM Mono', monospace;
+      color: #e4e4e7;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 20px 100px;
+    }
+    .header {
+      width: 100%; max-width: 500px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 40px 0 32px;
+      border-bottom: 1px solid #2d2d30;
+    }
+    .title { font-family: 'DM Serif Display', serif; font-size: 26px; letter-spacing: -0.5px; color: #f4f4f5; }
+    .title em { font-style: italic; color: #52525b; }
+    .header-right { display: flex; align-items: center; gap: 8px; }
+    .diff-badge { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; padding: 4px 9px; border-radius: 4px; border: 1px solid; font-family: 'DM Mono', monospace; }
+    .new-btn { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.1em; color: #71717a; text-transform: uppercase; background: none; border: 1px solid #3f3f46; border-radius: 5px; padding: 6px 11px; cursor: pointer; transition: color .15s, border-color .15s; }
+    .new-btn:hover { color: #e4e4e7; border-color: #71717a; }
+    .new-btn:disabled { opacity: .25; cursor: default; }
+    .body { width: 100%; max-width: 500px; padding-top: 32px; }
+
+    .select-screen { padding: 32px 0 0; }
+    .select-title { font-family: 'DM Serif Display', serif; font-size: 20px; color: #a1a1aa; margin-bottom: 6px; }
+    .select-sub { font-size: 11px; color: #52525b; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 32px; }
+    .diff-cards { display: flex; flex-direction: column; gap: 10px; }
+    .diff-card { background: #1f1f23; border: 1px solid #2d2d30; border-radius: 9px; padding: 18px 20px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: border-color .15s, background .15s; }
+    .diff-card:hover { background: #27272a; border-color: #52525b; }
+    .dc-name { font-family: 'DM Serif Display', serif; font-size: 18px; margin-bottom: 4px; }
+    .dc-desc { font-size: 11px; color: #71717a; letter-spacing: .04em; }
+    .dc-arrow { font-size: 18px; color: #3f3f46; }
+
+    .input-row { display: flex; gap: 8px; margin-bottom: 6px; }
+    .inp { flex: 1; font-family: 'DM Mono', monospace; font-size: 14px; color: #e4e4e7; background: #1f1f23; border: 1px solid #3f3f46; border-radius: 7px; padding: 11px 14px; outline: none; transition: border-color .15s; }
+    .inp::placeholder { color: #3f3f46; }
+    .inp:focus { border-color: #71717a; }
+    .send { font-family: 'DM Mono', monospace; font-size: 12px; color: #18181b; background: #e4e4e7; border: none; border-radius: 7px; padding: 11px 18px; cursor: pointer; letter-spacing: .04em; transition: opacity .15s; }
+    .send:disabled { opacity: .2; cursor: default; }
+    .send:hover:not(:disabled) { opacity: .8; }
+    .err { font-size: 11px; color: #f87171; margin-bottom: 14px; letter-spacing: .04em; }
+
+    .meta { display: flex; gap: 18px; margin-bottom: 20px; font-size: 11px; color: #52525b; letter-spacing: .06em; text-transform: uppercase; }
+    .meta strong { color: #a1a1aa; font-weight: 500; }
+
+    .hints-panel { background: #1f1f23; border: 1px solid #2d2d30; border-radius: 8px; padding: 14px 16px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 10px; }
+    .hint-meta { font-size: 10px; color: #3f3f46; letter-spacing: .06em; text-transform: uppercase; margin-bottom: -4px; }
+    .hint-row { display: flex; align-items: center; gap: 10px; }
+    .hint-trigger { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #71717a; background: none; border: 1px solid #3f3f46; border-radius: 5px; padding: 5px 10px; cursor: pointer; transition: color .15s, border-color .15s; white-space: nowrap; }
+    .hint-trigger:hover { color: #e4e4e7; border-color: #71717a; }
+    .hint-val { font-size: 11px; color: #a1a1aa; letter-spacing: .04em; line-height: 1.5; animation: fi .2s ease; }
+    .hint-val strong { color: #e4e4e7; }
+
+    .bar { height: 1.5px; background: #27272a; border-radius: 99px; margin-bottom: 28px; }
+    .bar-fill { height: 100%; background: #71717a; border-radius: 99px; transition: width .5s cubic-bezier(.4,0,.2,1); }
+
+    .col-heads { display: grid; grid-template-columns: 20px 1fr 56px 88px; gap: 10px; padding: 0 2px 8px; font-size: 9px; color: #3f3f46; letter-spacing: .12em; text-transform: uppercase; border-bottom: 1px solid #27272a; margin-bottom: 4px; }
+    .row { display: grid; grid-template-columns: 20px 1fr 56px 88px; gap: 10px; align-items: center; padding: 10px 2px; border-bottom: 1px solid #1f1f23; animation: fi .2s ease; }
+    @keyframes fi { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+    .r-num { font-size: 10px; color: #3f3f46; text-align: center; }
+    .r-word { font-size: 13px; font-weight: 500; color: #e4e4e7; letter-spacing: .02em; }
+    .r-score { font-size: 13px; font-weight: 500; text-align: right; }
+    .r-lbl { font-size: 10px; color: #52525b; text-align: right; letter-spacing: .06em; }
+
+    .empty { padding: 48px 0; text-align: center; font-size: 11px; color: #3f3f46; letter-spacing: .1em; text-transform: uppercase; }
+
+    .win { background: #1f1f23; border: 1px solid #2d2d30; border-radius: 10px; padding: 36px 28px; text-align: center; margin-bottom: 28px; animation: fi .35s ease; }
+    .win-eyebrow { font-size: 10px; color: #52525b; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 14px; }
+    .win-word { font-family: 'DM Serif Display', serif; font-size: 56px; letter-spacing: -1px; color: #f4f4f5; line-height: 1; margin-bottom: 6px; }
+    .win-cat { font-size: 11px; color: #52525b; letter-spacing: .08em; margin-bottom: 28px; }
+    .win-rule { height: 1px; background: #27272a; margin-bottom: 24px; }
+    .win-stats { display: flex; justify-content: center; gap: 48px; margin-bottom: 28px; }
+    .ws-label { font-size: 10px; color: #52525b; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 4px; }
+    .ws-val { font-family: 'DM Serif Display', serif; font-size: 36px; color: #f4f4f5; }
+    .play-again { font-family: 'DM Mono', monospace; font-size: 11px; color: #e4e4e7; background: none; border: 1px solid #3f3f46; border-radius: 7px; padding: 9px 22px; cursor: pointer; letter-spacing: .08em; text-transform: uppercase; transition: background .15s, border-color .15s; }
+    .play-again:hover { background: #27272a; border-color: #71717a; }
+  </style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ─────────────────────────────────────────────
+// BANCO DE PALAVRAS COM VIZINHOS SEMÂNTICOS
+// Cada palavra tem uma lista ordenada do mais
+// ao menos similar (índice 0 = mais próximo)
+// ─────────────────────────────────────────────
+const WORDS = {
+  // ANIMAIS
+  cachorro: { cat:"animal", hint:"Fiel companheiro de quatro patas que late", neighbors:["cão","vira-lata","raça","poodle","labrador","filhote","pelo","focinho","latido","pata","osso","coleira","guia","tutor","bicho","animal","gato","hamster","coelho","papagaio","veterinário","ração","passear","parque","quintal","casa","mamífero","doméstico","selvagem","zoológico"] },
+  gato: { cat:"animal", hint:"Mia, ronrona e adora dormir no sol", neighbors:["felino","gatinho","bicho","miau","ronronar","pelo","bigode","garra","pata","cauda","arranhador","caixinha","veterinário","ração","cachorro","animal","hamster","coelho","doméstico","mamífero","selvagem","leão","tigre","onça","zoológico","casa","quintal","almofada","janela","noite"] },
+  cavalo: { cat:"animal", hint:"Galopa nas pradarias com crina ao vento", neighbors:["égua","potro","garanhão","crina","casco","sela","rédea","estribo","hipódromo","cavaleiro","jóquei","fazenda","pasto","galope","trote","haras","charrete","carroça","mula","burro","animal","mamífero","selvagem","zebra","pônei","corrida","esporte","equestre","granja","campo"] },
+  elefante: { cat:"animal", hint:"O maior animal terrestre com tromba enorme", neighbors:["tromba","marfim","savana","África","mamífero","paquiderme","rinoceronte","hipopótamo","girafa","leão","zebra","animal","zoológico","selvagem","manada","filhote","orca","baleia","grande","cinza"] },
+  leão: { cat:"animal", hint:"Rei da selva com juba majestosa", neighbors:["tigre","onça","felino","juba","savana","África","predador","rugido","fêmea","leoa","filhote","caça","manada","animal","selvagem","zoológico","leopardo","guepardo","jaguar","carnívoro"] },
+  borboleta: { cat:"animal", hint:"Flutua entre flores com asas coloridas", neighbors:["mariposa","asa","flor","jardim","colorida","metamorfose","lagarta","casulo","pólen","néctar","inseto","voar","prado","natureza","libélula","abelha","bicho","primavera","leve","delicada"] },
+  peixe: { cat:"animal", hint:"Nada em silêncio com escamas brilhantes", neighbors:["aquário","rio","mar","escama","barbatana","nadar","anzol","pesca","oceano","coral","tubarão","golfinho","baleia","marisco","água","animal","aquático","fruto do mar","atum","salmão"] },
+  // FRUTAS
+  maçã: { cat:"fruta", hint:"Fruta vermelha ou verde que mantém o médico afastado", neighbors:["pera","uva","fruta","suco","torta","casca","semente","vermelha","verde","doce","árvore","pomar","outono","vitamina","cesta","mercado","vitamina C","polpa","suculenta","crocante"] },
+  banana: { cat:"fruta", hint:"Fruta amarela curvada adorada por macacos", neighbors:["fruta","amarela","penca","macaco","tropical","vitamina","potássio","doce","casca","vitamina B","vitamina C","suco","smoothie","vitamina","receita","bolo","frita","pão","mingau","sorvete"] },
+  laranja: { cat:"fruta", hint:"Fruta cítrica que espreme para o café da manhã", neighbors:["limão","fruta","cítrica","suco","vitamina C","casca","polpa","toranja","tangerina","grapefruit","tropical","doce","ácida","espremedor","refresco","vitamina","pomar","árvore","fresca","verão"] },
+  uva: { cat:"fruta", hint:"Pequena fruta em cacho usada para fazer vinho", neighbors:["vinho","cacho","parreira","passa","suco","fruta","doce","ácida","tinto","branco","rosé","vindima","safra","queijo","mesa","sobremesa","polpa","semente","vermelha","verde"] },
+  morango: { cat:"fruta", hint:"Pequena fruta vermelha com pontinhos que vai bem com chantilly", neighbors:["fruta","vermelha","doce","jardim","sorvete","bolo","vitamina","polpa","semente","fresca","vitamina C","vitamina","smoothie","geléia","torta","sobremesa","primavera","campo","campo","vermelho"] },
+  abacaxi: { cat:"fruta", hint:"Fruta tropical espinhosa e amarela por dentro", neighbors:["fruta","tropical","suco","vitamina","polpa","doce","ácida","casca","espinhosa","vitamina C","refresco","verão","receita","pizza","geléia","sorvete","suco","bolo","vitamina","fresca"] },
+  melancia: { cat:"fruta", hint:"Fruta gigante verde por fora, vermelha por dentro, perfeita no verão", neighbors:["fruta","verão","doce","semente","polpa","vermelha","verde","casca","refresco","suco","fatia","vitamina","piquenique","praia","fresca","grande","tropical","melão","pepino","abacaxi"] },
+  // MÓVEIS
+  cadeira: { cat:"móvel", hint:"Você senta nela para trabalhar ou jantar", neighbors:["banco","poltrona","sofá","assento","encosto","perna","almofada","mesa","cadeirão","escritório","cozinha","sala","madeira","estofado","sentar","conforto","mobília","móvel","cadeira de balanço","cadeira giratória"] },
+  mesa: { cat:"móvel", hint:"Superfície plana onde você come, trabalha ou apoia coisas", neighbors:["cadeira","bancada","balcão","tampo","perna","sala","cozinha","escritório","jantar","madeira","vidro","mármore","apoio","mobília","móvel","mesa de jantar","mesa de escritório","mesa lateral","toalha","prato"] },
+  cama: { cat:"móvel", hint:"Onde você deita para dormir toda noite", neighbors:["colchão","travesseiro","cobertor","lençol","almofada","quarto","dormir","descanso","beliche","casal","solteiro","cabeceira","móvel","estrado","edredom","cansaço","sono","pijama","acordar","sonho"] },
+  sofá: { cat:"móvel", hint:"Móvel estofado confortável para relaxar na sala", neighbors:["poltrona","cadeira","sala","estofado","almofada","conforto","descanso","televisão","cobertor","madeira","tecido","couro","mobília","móvel","chaise","divã","reclinável","apoio","sentar","relaxar"] },
+  guarda_roupa: { cat:"móvel", hint:"Armário grande onde você guarda suas roupas e cabides", neighbors:["armário","gaveta","cabide","roupa","quarto","porta","espelho","madeira","closet","organizador","móvel","mobília","cabeceira","cômoda","prateleira","dobrar","pendurar","guarda","armazenar","espaço"] },
+  // COZINHA
+  panela: { cat:"cozinha", hint:"Utensílio de metal usado no fogão para cozinhar alimentos", neighbors:["frigideira","caçarola","wok","cozinhar","fogão","forno","tampa","alça","aço","ferro","teflon","receita","sopa","feijão","arroz","caldo","refogar","ferver","utensílio","cozinha"] },
+  faca: { cat:"cozinha", hint:"Utensílio cortante indispensável para preparar ingredientes", neighbors:["tesoura","garfo","colher","talheres","cortar","lâmina","cabo","amolar","cozinha","churrasco","pão","queijo","fatiador","utensílio","culinária","chef","carne","legumes","descascar","picar"] },
+  fogão: { cat:"cozinha", hint:"Eletrodoméstico com chamas ou resistências onde se cozinha", neighbors:["forno","microondas","geladeira","cozinhar","gás","elétrico","boca","chama","panela","frigideira","cozinha","utensílio","eletrodoméstico","receita","calor","queimador","assar","fritar","ferver","cozimento"] },
+  geladeira: { cat:"cozinha", hint:"Eletrodoméstico que conserva alimentos no frio", neighbors:["freezer","frigorífico","congelador","frio","temperatura","alimento","conservar","eletrodoméstico","cozinha","bebida","fruta","verdura","leite","iogurte","gelo","porta","prateleira","energia","frescor","compressor"] },
+  colher: { cat:"cozinha", hint:"Utensílio arredondado para servir sopas e caldos", neighbors:["garfo","faca","talheres","concha","escumadeira","servir","comer","sopa","caldos","cozinha","utensílio","inox","madeira","mexer","provar","receita","sobremesa","chá","café","culinária"] },
+  // NATUREZA
+  árvore: { cat:"natureza", hint:"Ser vivo com tronco, galhos e folhas que dá sombra", neighbors:["floresta","folha","galho","tronco","raiz","sombra","bosque","madeira","fruto","planta","natureza","jardim","parque","oxigênio","verde","pássaro","ninho","cipó","mata","reflorestamento"] },
+  rio: { cat:"natureza", hint:"Curso d'água doce que desce montanhas e desemboca no mar", neighbors:["lago","riacho","cachoeira","córrego","água","peixe","margem","leito","corrente","nadar","pesca","natureza","canoagem","ponte","travessia","enchente","seco","afluente","bacia","hidrografia"] },
+  montanha: { cat:"natureza", hint:"Elevação enorme de terra e rocha que toca as nuvens", neighbors:["morro","colina","pico","cume","neve","escalada","trilha","vale","encosta","rocha","pedra","natureza","paisagem","altitude","trekking","vista","nuvem","frio","serra","cordilheira"] },
+  flor: { cat:"natureza", hint:"Parte colorida e perfumada da planta que atrai abelhas", neighbors:["pétala","caule","jardim","perfume","cor","buquê","rosa","margarida","girassol","pólen","abelha","borboleta","natureza","primavera","plantar","cheiro","ornamental","vaso","campo","prado"] },
+  pedra: { cat:"natureza", hint:"Fragmento sólido de mineral encontrado no solo e rios", neighbors:["rocha","mineral","granito","mármore","calcário","calçada","parede","construção","peso","dura","areia","seixo","cascalho","mineral","geologia","natureza","montanha","rio","caverna","escavar"] },
+  // ESPORTE
+  bola: { cat:"esporte", hint:"Objeto esférico usado em diversas modalidades esportivas", neighbors:["futebol","basquete","vôlei","tênis","gol","arremessar","chutar","rebater","jogo","time","quadra","campo","esporte","jogo","competição","árbitro","placar","treinar","torneio","campeão"] },
+  futebol: { cat:"esporte", hint:"Esporte mais popular do Brasil com gol e chute", neighbors:["bola","gol","campo","time","jogador","craque","chute","passe","defesa","ataque","árbitro","torcida","estádio","campeonato","Copa","esporte","pelada","chuteira","uniforme","marcador"] },
+  natação: { cat:"esporte", hint:"Esporte aquático com braçadas e pernadas em piscina", neighbors:["nadar","piscina","nado","atleta","peito","costas","borboleta","livre","mergulho","respiração","esporte","velocidade","raia","touca","óculos","treino","campeonato","olímpico","água","lane"] },
+  tênis: { cat:"esporte", hint:"Esporte de raquete disputado em quadra com rede", neighbors:["raquete","quadra","bola","rede","saque","voleio","set","game","match","jogador","esporte","sapato","ace","jogo","torneio","Wimbledon","Roland Garros","US Open","Australian Open","dupla"] },
+  basquete: { cat:"esporte", hint:"Esporte de arremessar a bola na cesta suspensa", neighbors:["cesta","bola","quadra","jogador","arremessar","driblar","passe","defesa","ataque","esporte","time","árbitro","placar","campeonato","NBA","saltar","pivô","ala","armador","enterrada"] },
+  // TRANSPORTE
+  carro: { cat:"transporte", hint:"Veículo com quatro rodas movido a combustível", neighbors:["automóvel","veículo","motor","rodas","direção","volante","freio","acelerador","gasolina","estrada","trânsito","transporte","garagem","mecânico","seguro","placa","modelo","marca","passageiro","velocidade"] },
+  bicicleta: { cat:"transporte", hint:"Veículo de duas rodas movido a pedal", neighbors:["pedal","roda","guidão","freio","corrente","ciclista","ciclovia","capacete","velocidade","esporte","transporte","passeio","trilha","sela","marcha","corrida","urbano","ecológico","exercício","aventura"] },
+  avião: { cat:"transporte", hint:"Veículo que voa pelos céus transportando passageiros", neighbors:["aeronave","voo","aeroporto","piloto","turbina","asa","pista","decolagem","pouso","altitude","passageiro","tripulação","bagagem","transporte","viagem","turismo","helicóptero","jato","comercial","internacional"] },
+  barco: { cat:"transporte", hint:"Embarcação que navega sobre a água", neighbors:["navio","lancha","veleiro","bote","canoa","mar","rio","vela","motor","porto","navegação","marinheiro","âncora","proa","popa","leme","transporte","pesca","passeio","oceano"] },
+  ônibus: { cat:"transporte", hint:"Veículo coletivo que percorre linhas urbanas e inter-estaduais", neighbors:["metrô","trem","transporte","coletivo","passageiro","motorista","rota","linha","ponto","bilhete","tarifa","urbano","rodoviária","lotação","assento","janela","parada","horário","terminal","frota"] },
+  // TECNOLOGIA
+  computador: { cat:"tecnologia", hint:"Máquina eletrônica que processa e armazena informações", neighbors:["notebook","teclado","mouse","tela","monitor","processador","memória","HD","software","internet","tecnologia","programar","dados","arquivo","sistema","rede","digital","eletrônico","hardware","USB"] },
+  celular: { cat:"tecnologia", hint:"Aparelho que cabe no bolso para ligar, mensagens e internet", neighbors:["smartphone","telefone","aplicativo","tela","bateria","câmera","internet","mensagem","chamada","tecnologia","WhatsApp","Instagram","digital","wireless","5G","carregador","fone","notificação","selfie","dados"] },
+  televisão: { cat:"tecnologia", hint:"Aparelho de tela grande que exibe programas e filmes em casa", neighbors:["TV","tela","canal","controle remoto","assistir","notícia","novela","série","filme","streaming","tecnologia","antena","HD","LED","OLED","som","imagem","programa","transmissão","digital"] },
+  teclado: { cat:"tecnologia", hint:"Periférico com teclas usado para digitar textos no computador", neighbors:["mouse","computador","digitar","tecla","letra","atalho","ABNT","mecânico","membrana","USB","wireless","tecnologia","digitação","escrever","escritório","gaming","layout","enter","backspace","shift"] },
+  câmera: { cat:"tecnologia", hint:"Equipamento que captura fotos e vídeos em alta resolução", neighbors:["fotografia","foto","lente","obturador","foco","zoom","flash","tripé","digital","tecnologia","resolução","pixel","DSLR","mirrorless","vídeo","filmagem","selfie","memória","arquivo","imagem"] },
+  // ROUPAS
+  camiseta: { cat:"roupa", hint:"Peça de roupa simples com manga curta usada no dia a dia", neighbors:["blusa","camisão","roupa","vestir","manga","algodão","estampa","gola","cor","tamanho","moda","casual","polo","regata","tecido","lavagem","closet","guarda-roupa","conforto","calor"] },
+  calça: { cat:"roupa", hint:"Peça de roupa que cobre da cintura até os pés", neighbors:["bermuda","short","jeans","saia","roupa","cintura","perna","bolso","cinto","zíper","moda","tecido","algodão","tamanho","modelo","calça jeans","calça social","legging","slim","flare"] },
+  sapato: { cat:"roupa", hint:"Calçado de couro ou sintético que protege os pés", neighbors:["tênis","sandália","bota","chinelo","calçado","solado","palmilha","couro","salto","cadarço","moda","pé","tamanho","número","loja","modelo","formal","casual","roupa","elegante"] },
+  chapéu: { cat:"roupa", hint:"Acessório que se usa na cabeça para sol ou estilo", neighbors:["boné","gorro","touca","aba","copa","palha","feltro","couro","moda","acessório","cabeça","sol","roupa","proteção","estilo","inverno","verão","cowboy","coco","cylindrical"] },
+  vestido: { cat:"roupa", hint:"Peça feminina que cobre o corpo do ombro até abaixo", neighbors:["saia","blusa","roupa","feminino","moda","tecido","decote","manga","comprido","curto","festa","casual","elegante","modelo","cor","estampa","algodão","seda","lace","rodado"] },
+  // ESCOLA
+  livro: { cat:"escola", hint:"Objeto com páginas e palavras que se lê para aprender ou se divertir", neighbors:["caderno","leitura","página","capítulo","autor","biblioteca","capa","texto","história","romance","ficção","saber","conhecimento","escola","literatura","caneta","lápis","estante","publicação","editora"] },
+  caneta: { cat:"escola", hint:"Instrumento com tinta usado para escrever no papel", neighbors:["lápis","borracha","marcador","esferográfica","tinta","escrever","caderno","papel","escrita","cor","ponta","tampa","escola","escritório","assinar","desenhar","sublinhador","gel","azul","preta"] },
+  mochila: { cat:"escola", hint:"Bolsa com alças usada nas costas para carregar livros", neighbors:["bolsa","sacola","alça","zíper","bolso","escola","faculdade","livro","caderno","costas","material","viagem","resistente","impermeável","lona","couro","capacidade","estudante","criança","adulto"] },
+  borracha: { cat:"escola", hint:"Pequeno objeto que apaga o que foi escrito a lápis", neighbors:["lápis","caneta","apagar","escola","escrita","caderno","papel","material","branca","colorida","resistente","suave","riscar","corrigir","desenho","traço","estudante","papelaria","limpar","desfazer"] },
+  régua: { cat:"escola", hint:"Instrumento plano e comprido usado para medir e traçar linhas retas", neighbors:["esquadro","compasso","transferidor","medir","traçar","linha","centímetro","milímetro","plástico","madeira","transparente","escola","desenho","geometria","matemática","arquitetura","precisão","escala","comprimento","material"] },
+  // INSTRUMENTOS
+  violão: { cat:"instrumento", hint:"Instrumento de cordas dedilhado muito popular no Brasil", neighbors:["guitarra","cavaquinho","banjo","corda","acorde","música","tocar","melodia","harmonia","nota","afinação","palco","show","cantor","MPB","sertanejo","rock","samba","bossa nova","instrumento"] },
+  piano: { cat:"instrumento", hint:"Instrumento de teclas que produz sons suaves e potentes", neighbors:["teclado","cravo","órgão","teclas","música","tocar","melodia","nota","acorde","clássica","jazz","concerto","pianista","recital","instrumento","harmonia","escala","afinação","concerto","solista"] },
+  bateria: { cat:"instrumento", hint:"Conjunto de tambores percutidos com baquetas no rock e jazz", neighbors:["tambor","caixa","bumbo","prato","baqueta","ritmo","percussão","música","tocar","banda","rock","jazz","bateria acústica","eletrônica","instrumento","compasso","groove","solo","ensaio","palco"] },
+  flauta: { cat:"instrumento", hint:"Instrumento de sopro tubular com buracos para dedos", neighbors:["oboé","clarinete","fagote","sopro","música","soprar","nota","melodia","instrumento","orquestra","flauta transversal","flauta doce","madeira","clássica","folclore","dança","ritmo","afinação","concerto","recital"] },
+  violino: { cat:"instrumento", hint:"Instrumento de cordas que se toca com um arco", neighbors:["viola","cello","contrabaixo","arco","corda","música","orquestra","clássica","melodia","nota","afinação","instrumento","concerto","solista","câmara","sinfonia","virtuoso","Vivaldi","Mozart","Bach"] },
+  // CONSTRUÇÃO
+  martelo: { cat:"ferramenta", hint:"Ferramenta pesada para pregar pregos ou quebrar paredes", neighbors:["prego","parafuso","chave","alicate","serrote","construção","ferramenta","bater","fixar","madeira","parede","cabo","metal","obra","carpinteiro","pedreiro","bricolagem","reparo","casa","trabalho"] },
+  tijolo: { cat:"construção", hint:"Bloco de barro cozido usado para construir paredes", neighbors:["cimento","argamassa","areia","parede","construção","alvenaria","obra","pedreiro","casa","prédio","bloco","cerâmica","reboco","fundação","estrutura","edificação","material","barro","queimado","vermelho"] },
+  janela: { cat:"construção", hint:"Abertura na parede com vidro que deixa entrar luz e ar", neighbors:["porta","vidro","veneziana","persiana","cortina","luz","ventilação","abertura","parede","casa","prédio","moldura","batente","basculante","guilhotina","construção","vista","exterior","proteção","caixilho"] },
+  escada: { cat:"construção", hint:"Estrutura com degraus para subir andares ou acessar alturas", neighbors:["degrau","corrimão","rampa","elevador","subir","descer","andar","construção","madeira","metal","portátil","fixa","spiral","casa","prédio","segurança","altura","acesso","obra","arquitetura"] },
+  porta: { cat:"construção", hint:"Painel que abre e fecha para dar acesso a um cômodo", neighbors:["janela","parede","abertura","fechadura","maçaneta","dobradiça","madeira","metal","casa","sala","quarto","entrada","saída","construção","batente","trinco","chave","abrir","fechar","acesso"] },
+  // NATUREZA extra
+  sol: { cat:"natureza", hint:"Estrela central do sistema solar que ilumina e aquece a Terra", neighbors:["lua","estrela","calor","luz","dia","energia","raio","planeta","sistema solar","astro","nascer","pôr do sol","brilho","verão","praia","bronzear","fotossíntese","aquecimento","côr","amarelo"] },
+  chuva: { cat:"natureza", hint:"Precipitação de água das nuvens que rega a terra", neighbors:["nuvem","trovão","raio","tempestade","vento","frio","molhar","guarda-chuva","poça","arco-íris","clima","inverno","chuvoso","aguaceiro","garoa","relâmpago","água","solo","gotícula","nuvem"] },
+  vento: { cat:"natureza", hint:"Movimento do ar que dobra as árvores e balança as folhas", neighbors:["brisa","furacão","tornado","tempestade","nuvem","chuva","frio","calor","clima","ventania","sopro","turbulência","corrente","ar","atmosfera","direção","velocidade","nordeste","sul","rajada"] },
+};
+
+// normaliza texto (remove acentos, minúsculas)
+function norm(s) {
+  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z ]/g,"").trim();
+}
+
+// Calcula score de similaridade 0-1000
+function calcScore(guess, secretWord, secretData) {
+  const g = norm(guess);
+  const s = norm(secretWord);
+  if (g === s) return 1000;
+
+  // verifica se o guess é sinônimo direto (está nos primeiros neighbors)
+  const neighbors = secretData.neighbors || [];
+  const normNeighbors = neighbors.map(n => norm(n));
+  const idx = normNeighbors.indexOf(g);
+
+  if (idx === -1) {
+    // tenta encontrar similaridade parcial como palavra contida
+    let partialScore = 0;
+    if (s.includes(g) || g.includes(s)) partialScore = Math.max(partialScore, 400);
+    // verifica contra todos os banks de palavras
+    for (const [wKey, wData] of Object.entries(WORDS)) {
+      const wNorm = norm(wKey);
+      const wNeighbors = (wData.neighbors || []).map(n => norm(n));
+      if (wNorm === g) {
+        // g é uma palavra conhecida — verifica se s está nos neighbors de g
+        const sInG = wNeighbors.indexOf(s);
+        if (sInG !== -1) {
+          const sc = Math.max(50, 700 - sInG * 22);
+          partialScore = Math.max(partialScore, sc);
+        }
+      }
+    }
+    return partialScore > 0 ? Math.min(999, partialScore) : Math.floor(Math.random() * 80 + 10);
+  }
+
+  // Mapeia índice para score:
+  // 0-2   → 950-990 (quase sinônimo)
+  // 3-6   → 850-940
+  // 7-14  → 650-840
+  // 15-24 → 400-640
+  // 25+   → 150-390
+  const total = neighbors.length;
+  const ratio = idx / total;
+  let score;
+  if (idx <= 2)       score = 990 - idx * 15;
+  else if (idx <= 6)  score = 940 - (idx - 3) * 22;
+  else if (idx <= 14) score = 840 - (idx - 7) * 24;
+  else if (idx <= 24) score = 630 - (idx - 15) * 23;
+  else                score = 400 - (idx - 25) * 10;
+  return Math.max(10, Math.min(999, score));
+}
+
+// Pega palavra aleatória por dificuldade
+function pickWord(difficulty) {
+  const keys = Object.keys(WORDS);
+  // shuffle sementes
+  let idx = Math.floor(Math.random() * keys.length);
+  // dificil: prefere palavras mais incomuns (parte de trás do array)
+  if (difficulty === "dificil") idx = Math.floor(Math.random() * keys.length * 0.4 + keys.length * 0.6) % keys.length;
+  if (difficulty === "facil") idx = Math.floor(Math.random() * keys.length * 0.5);
+  const key = keys[idx];
+  return { word: key, ...WORDS[key] };
+}
+
+// ─────────────────────────────────────────────
+// UI
+// ─────────────────────────────────────────────
+const DIFFICULTY = {
+  facil:  { label:"Fácil",   desc:"Categoria + primeira letra + número de letras", color:"#4ade80" },
+  medio:  { label:"Médio",   desc:"Categoria + número de letras",                   color:"#facc15" },
+  dificil:{ label:"Difícil", desc:"Apenas categoria disponível",                    color:"#f87171" },
+};
+
+function scoreColor(s) {
+  if (s >= 900) return "#4ade80";
+  if (s >= 700) return "#facc15";
+  if (s >= 400) return "#fb923c";
+  return "#64748b";
+}
+function scoreLabel(s) {
+  if (s === 1000) return "exato";
+  if (s >= 900) return "muito quente";
+  if (s >= 700) return "quente";
+  if (s >= 400) return "morno";
+  if (s >= 100) return "frio";
+  return "gelado";
+}
+
+function h(tag, props, ...children) {
+  const el = document.createElement(tag);
+  if (props) Object.entries(props).forEach(([k,v]) => {
+    if (k === "className") el.className = v;
+    else if (k === "style") Object.assign(el.style, v);
+    else if (k.startsWith("on")) el.addEventListener(k.slice(2).toLowerCase(), v);
+    else el.setAttribute(k, v);
+  });
+  children.flat().forEach(c => c != null && el.append(typeof c === "string" ? c : c));
+  return el;
+}
+
+// ─── State ───
+let state = {
+  phase: "select",        // select | playing | won
+  difficulty: null,
+  secret: null,
+  guesses: [],
+  error: "",
+  showCatHint: false,
+  showWordHint: false,
+  hintUsed: false,
+};
+
+function setState(patch) {
+  Object.assign(state, patch);
+  render();
+}
+
+// ─── Render ───
+function render() {
+  const app = document.getElementById("app");
+  app.innerHTML = "";
+
+  const { phase, difficulty, secret, guesses, error, showCatHint, showWordHint, hintUsed } = state;
+  const diff = difficulty ? DIFFICULTY[difficulty] : null;
+  const best = guesses.length ? guesses[0].score : 0;
+
+  // Header
+  const headerRight = h("div", {className:"header-right"});
+  if (diff) {
+    headerRight.append(h("span", {
+      className:"diff-badge",
+      style:{ color: diff.color, borderColor: diff.color + "44" }
+    }, diff.label));
+  }
+  if (phase !== "select") {
+    const nb = h("button", {className:"new-btn"}, "Novo jogo");
+    nb.onclick = () => setState({ phase:"select", difficulty:null, secret:null, guesses:[], error:"", showCatHint:false, showWordHint:false, hintUsed:false });
+    headerRight.append(nb);
+  }
+
+  const header = h("div", {className:"header"},
+    h("div", {className:"title"}, "Contexto", h("em", null, ".")),
+    headerRight
+  );
+
+  const body = h("div", {className:"body"});
+
+  // ── Select ──
+  if (phase === "select") {
+    const cards = h("div", {className:"diff-cards"});
+    Object.entries(DIFFICULTY).forEach(([key, d]) => {
+      const card = h("div", {className:"diff-card"},
+        h("div", null,
+          h("div", {className:"dc-name", style:{color:d.color}}, d.label),
+          h("div", {className:"dc-desc"}, d.desc)
+        ),
+        h("div", {className:"dc-arrow"}, "›")
+      );
+      card.onclick = () => {
+        const s = pickWord(key);
+        setState({ phase:"playing", difficulty:key, secret:s, guesses:[], error:"", showCatHint:false, showWordHint:false, hintUsed:false });
+        setTimeout(() => document.querySelector(".inp")?.focus(), 50);
+      };
+      cards.append(card);
+    });
+    body.append(
+      h("div", {className:"select-screen"},
+        h("div", {className:"select-title"}, "Escolha a dificuldade"),
+        h("div", {className:"select-sub"}, "Isso define quais dicas estarão disponíveis"),
+        cards
+      )
+    );
+  }
+
+  // ── Playing ──
+  if (phase === "playing" || phase === "won") {
+
+    // Win banner
+    if (phase === "won") {
+      const pa = h("button", {className:"play-again"}, "Jogar novamente");
+      pa.onclick = () => setState({ phase:"select", difficulty:null, secret:null, guesses:[], error:"", showCatHint:false, showWordHint:false, hintUsed:false });
+
+      const stats = h("div", {className:"win-stats"},
+        h("div", null,
+          h("div", {className:"ws-label"}, "Tentativas"),
+          h("div", {className:"ws-val"}, String(guesses.length))
+        )
+      );
+      if (hintUsed) {
+        stats.append(h("div", null,
+          h("div", {className:"ws-label"}, "Dica usada"),
+          h("div", {className:"ws-val", style:{fontSize:"22px",paddingTop:"8px"}}, "sim")
+        ));
+      }
+
+      body.append(h("div", {className:"win"},
+        h("div", {className:"win-eyebrow"}, "Palavra encontrada"),
+        h("div", {className:"win-word"}, secret.word),
+        h("div", {className:"win-cat"}, secret.cat + " · " + diff.label),
+        h("div", {className:"win-rule"}),
+        stats,
+        pa
+      ));
+    }
+
+    // Input
+    if (phase === "playing") {
+      const inp = h("input", {className:"inp", type:"text", placeholder:"Digite uma palavra...", autocomplete:"off", autocorrect:"off", spellcheck:"false"});
+      const send = h("button", {className:"send"}, "Tentar");
+
+      const doSubmit = () => {
+        const word = inp.value.trim().toLowerCase();
+        if (!word) return;
+        if (state.guesses.find(g => norm(g.word) === norm(word))) {
+          setState({error:"Já tentada."}); return;
+        }
+        const score = calcScore(word, secret.word, WORDS[secret.word] || secret);
+        const next = [...state.guesses, {word, score}].sort((a,b) => b.score - a.score);
+        inp.value = "";
+        setState({ guesses: next, error: "", phase: score === 1000 ? "won" : "playing" });
+        setTimeout(() => document.querySelector(".inp")?.focus(), 50);
+      };
+
+      inp.onkeydown = e => e.key === "Enter" && doSubmit();
+      send.onclick = doSubmit;
+
+      body.append(h("div", {className:"input-row"}, inp, send));
+      if (error) body.append(h("div", {className:"err"}, error));
+
+      // Meta
+      const meta = h("div", {className:"meta"},
+        h("span", null, String(guesses.length), " ", h("strong", null, guesses.length !== 1 ? "tentativas" : "tentativa"))
+      );
+      if (best > 0) {
+        const sp = document.createElement("span");
+        sp.innerHTML = `melhor <strong>${best}</strong>`;
+        meta.append(sp);
+      }
+      body.append(meta);
+
+      // Hints panel
+      const hintsPanel = h("div", {className:"hints-panel"},
+        h("div", {className:"hint-meta"}, "Dicas disponíveis")
+      );
+
+      // Cat hint
+      const catRow = h("div", {className:"hint-row"});
+      const catBtn = h("button", {className:"hint-trigger"}, showCatHint ? "Ocultar" : "Categoria");
+      catBtn.onclick = () => setState({showCatHint: !state.showCatHint});
+      catRow.append(catBtn);
+      if (showCatHint) {
+        let hintText = secret.cat;
+        if (difficulty === "facil" || difficulty === "medio") hintText += ` · ${secret.word.length} letras`;
+        if (difficulty === "facil") hintText += ` · começa com "${secret.word[0].toUpperCase()}"`;
+        const hv = h("span", {className:"hint-val"});
+        hv.innerHTML = hintText.replace(/·/g, "·").replace(/"([^"]+)"/g, '"<strong>$1</strong>"').replace(/(\d+) letras/, '<strong>$1</strong> letras');
+        catRow.append(hv);
+      }
+      hintsPanel.append(catRow);
+
+      // Word hint
+      const wordRow = h("div", {className:"hint-row"});
+      const wordBtn = h("button", {className:"hint-trigger"}, showWordHint ? "Ocultar dica" : "Dica da palavra");
+      wordBtn.onclick = () => {
+        setState({ showWordHint: !state.showWordHint, hintUsed: true });
+      };
+      wordRow.append(wordBtn);
+      if (showWordHint && secret.hint) {
+        wordRow.append(h("span", {className:"hint-val"}, secret.hint));
+      }
+      hintsPanel.append(wordRow);
+
+      body.append(hintsPanel);
+
+      // Progress bar
+      if (guesses.length > 0) {
+        body.append(h("div", {className:"bar"},
+          h("div", {className:"bar-fill", style:{width:`${best/10}%`}})
+        ));
+      }
+    }
+
+    // Guess list
+    if (guesses.length > 0) {
+      const colHeads = h("div", {className:"col-heads"},
+        h("div"),
+        h("div", null, "Palavra"),
+        h("div", {style:{textAlign:"right"}}, "Score"),
+        h("div", {style:{textAlign:"right"}}, "Temperatura")
+      );
+      body.append(colHeads);
+
+      guesses.forEach((g, i) => {
+        const row = h("div", {className:"row"},
+          h("div", {className:"r-num"}, String(i+1)),
+          h("div", {className:"r-word"}, g.word),
+          h("div", {className:"r-score", style:{color:scoreColor(g.score)}}, String(g.score)),
+          h("div", {className:"r-lbl"}, scoreLabel(g.score))
+        );
+        body.append(row);
+      });
+    }
+
+    if (guesses.length === 0 && phase === "playing") {
+      body.append(h("div", {className:"empty"}, "Faça sua primeira tentativa"));
+    }
+  }
+
+  app.append(header, body);
+}
+
+render();
+</script>
+</body>
+</html>
